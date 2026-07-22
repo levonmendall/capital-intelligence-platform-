@@ -20,8 +20,13 @@ class FakeResponse:
         }
 
 
-def test_provider_requires_api_key() -> None:
+def test_provider_requires_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Provider should clearly fail without credentials."""
+
+    # Remove any GitHub Actions secret from the environment.
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
 
     provider = FREDProvider(api_key=None)
 
