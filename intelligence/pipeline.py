@@ -2,7 +2,7 @@
 
 from core.database import get_connection, initialize_database
 from intelligence.models import CIODecision
-from intelligence.provider import load_sample_snapshot
+from intelligence.provider import load_best_available_snapshot
 from intelligence.regime import determine_regime
 
 
@@ -45,16 +45,15 @@ def build_allocation(regime: str) -> tuple[str, dict[str, float]]:
 def run_intelligence(save: bool = True) -> CIODecision:
     """Run market analysis and return an explainable CIO decision."""
 
-    snapshot = load_sample_snapshot()
+    snapshot, data_source = load_best_available_snapshot()
     regime, confidence = determine_regime(snapshot)
     risk_posture, allocation = build_allocation(regime)
 
     rationale = (
-        f"The system identified a {regime} regime with "
-        f"{confidence:.0%} confidence. Growth, inflation, market trend, "
-        f"volatility, and credit conditions support a "
-        f"{risk_posture.lower()} paper-allocation posture."
-    )
+    f"The system identified a {regime} regime with "
+    f"{confidence:.0%} confidence using {data_source}. "
+    f"The resulting posture is {risk_posture.lower()}."
+)
 
     decision = CIODecision(
         regime=regime,
