@@ -13,11 +13,14 @@ from core.trading import (
 )
 
 
+MANDATE_CODE = "PRES"
+
+
 def test_buy_trade() -> None:
     """A valid purchase should reduce mandate cash."""
 
     result = place_trade(
-        mandate_code="CP",
+        mandate_code=MANDATE_CODE,
         side="BUY",
         symbol="SPY",
         quantity=10,
@@ -27,7 +30,7 @@ def test_buy_trade() -> None:
 
     assert result.remaining_cash == 24000
 
-    holdings = get_holdings("CP")
+    holdings = get_holdings(MANDATE_CODE)
 
     assert len(holdings) == 1
     assert holdings[0]["symbol"] == "SPY"
@@ -39,7 +42,7 @@ def test_update_price() -> None:
     """Updating a holding price should change its market value."""
 
     place_trade(
-        mandate_code="CP",
+        mandate_code=MANDATE_CODE,
         side="BUY",
         symbol="SPY",
         quantity=10,
@@ -48,12 +51,12 @@ def test_update_price() -> None:
     )
 
     update_holding_price(
-        mandate_code="CP",
+        mandate_code=MANDATE_CODE,
         symbol="SPY",
         price=110,
     )
 
-    holdings = get_holdings("CP")
+    holdings = get_holdings(MANDATE_CODE)
 
     assert len(holdings) == 1
     assert holdings[0]["current_price"] == 110
@@ -65,7 +68,7 @@ def test_portfolio_gain() -> None:
     """A price increase should raise the mandate NAV."""
 
     place_trade(
-        mandate_code="CP",
+        mandate_code=MANDATE_CODE,
         side="BUY",
         symbol="SPY",
         quantity=10,
@@ -74,12 +77,12 @@ def test_portfolio_gain() -> None:
     )
 
     update_holding_price(
-        mandate_code="CP",
+        mandate_code=MANDATE_CODE,
         symbol="SPY",
         price=110,
     )
 
-    details = get_mandate_details("CP")
+    details = get_mandate_details(MANDATE_CODE)
 
     assert details is not None
     assert details["nav"] == 25100
@@ -91,7 +94,7 @@ def test_rejects_purchase_without_enough_cash() -> None:
 
     with pytest.raises(TradingError):
         place_trade(
-            mandate_code="CP",
+            mandate_code=MANDATE_CODE,
             side="BUY",
             symbol="SPY",
             quantity=1000,
@@ -105,7 +108,7 @@ def test_rejects_sale_without_shares() -> None:
 
     with pytest.raises(TradingError):
         place_trade(
-            mandate_code="CP",
+            mandate_code=MANDATE_CODE,
             side="SELL",
             symbol="SPY",
             quantity=1,
