@@ -17,6 +17,7 @@ jobs:
 
     env:
       PYTHONPATH: ${{ github.workspace }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
     steps:
       - name: Check out repository
