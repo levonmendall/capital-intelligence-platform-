@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import core.database as database
+from core.seed import seed_mandates
 
 
 @pytest.fixture(autouse=True)
@@ -12,7 +13,7 @@ def isolated_database(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Use a brand-new temporary SQLite database for every test."""
+    """Create and seed a temporary database for every test."""
 
     database_path = tmp_path / "capital_intelligence_test.db"
 
@@ -23,5 +24,6 @@ def isolated_database(
     )
 
     database.initialize_database()
+    seed_mandates()
 
     yield database_path
