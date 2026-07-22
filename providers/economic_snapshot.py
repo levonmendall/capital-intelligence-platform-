@@ -1,4 +1,4 @@
-"""Build a normalized market snapshot from economic data."""
+"""Build normalized market snapshots from FRED economic data."""
 
 from __future__ import annotations
 
@@ -11,13 +11,29 @@ from providers.fred import FREDProvider, FREDProviderError
 
 @dataclass(frozen=True)
 class EconomicReadings:
-    """Raw economic observations used by the regime engine."""
+    """Raw economic readings displayed by the dashboard."""
 
     unemployment_rate: float
     inflation_rate: float
     ten_year_yield: float
     two_year_yield: float
     federal_funds_rate: float
+
+    @property
+    def yield_curve_spread(self) -> float:
+        """Return the 10-year Treasury yield minus the 2-year yield."""
+
+        return self.ten_year_yield - self.two_year_yield
+
+
+@dataclass(frozen=True)
+class EconomicDashboardData:
+    """Complete economic data package for the application."""
+
+    snapshot: MarketSnapshot
+    readings: EconomicReadings | None
+    data_source: str
+    status: str
 
 
 SERIES = {
@@ -29,8 +45,12 @@ SERIES = {
 }
 
 
-def clamp(value: float, minimum: float = -1.0, maximum: float = 1.0) -> float:
-    """Restrict a number to the configured normalized range."""
+def clamp(
+    value: float,
+    minimum: float = -1.0,
+    maximum: float = 1.0,
+) -> float:
+    """Restrict a value to the normalized scoring range."""
 
     return max(minimum, min(maximum, value))
 
@@ -38,23 +58,27 @@ def clamp(value: float, minimum: float = -1.0, maximum: float = 1.0) -> float:
 def build_live_snapshot(
     provider: FREDProvider | None = None,
 ) -> tuple[MarketSnapshot, EconomicReadings]:
-    """Create a normalized snapshot from current FRED readings."""
+    """Build normalized intelligence inputs from current FRED data."""
 
     fred = provider or FREDProvider()
 
     unemployment = fred.get_latest_value(
         SERIES["unemployment"]
     ).value
+
     inflation_observations = fred.get_observations(
         SERIES["inflation"],
         limit=14,
     )
+
     ten_year = fred.get_latest_value(
         SERIES["ten_year"]
     ).value
+
     two_year = fred.get_latest_value(
         SERIES["two_year"]
     ).value
+
     fed_funds = fred.get_latest_value(
         SERIES["fed_funds"]
     ).value
@@ -68,11 +92,25 @@ def build_live_snapshot(
 
     yield_spread = ten_year - two_year
 
-    growth_score = clamp((5.0 - unemployment) / 3.0)
-    inflation_score = clamp((inflation_rate - 2.0) / 3.0)
-    trend_score = clamp(yield_spread / 2.0)
-    volatility_score = clamp((fed_funds - 3.0) / 4.0)
-    credit_score = clamp(-yield_spread / 2.0)
+    growth_score = clamp(
+        (5.0 - unemployment) / 3.0
+    )
+
+    inflation_score = clamp(
+        (inflation_rate - 2.0) / 3.0
+    )
+
+    trend_score = clamp(
+        yield_spread / 2.0
+    )
+
+    volatility_score = clamp(
+        (fed_funds - 3.0) / 4.0
+    )
+
+    credit_score = clamp(
+        -yield_spread / 2.0
+    )
 
     snapshot = MarketSnapshot(
         growth=growth_score,
@@ -93,16 +131,44 @@ def build_live_snapshot(
     return snapshot, readings
 
 
-def load_best_available_snapshot() -> tuple[MarketSnapshot, str]:
-    """Use live FRED data when configured, otherwise use sample data."""
+def load_dashboard_data() -> EconomicDashboardData:
+    """Return live economic data or a safe sample fallback."""
 
     provider = FREDProvider()
 
     if not provider.configured:
-        return load_sample_snapshot(), "Sample data"
+        return EconomicDashboardData(
+            snapshot=load_sample_snapshot(),
+            readings=None,
+            data_source="Sample data",
+            status="FRED API key not configured",
+        )
 
     try:
-        snapshot, _ = build_live_snapshot(provider)
-        return snapshot, "Live FRED data"
-    except FREDProviderError:
-        return load_sample_snapshot(), "Sample fallback"
+        snapshot, readings = build_live_snapshot(provider)
+
+        return EconomicDashboardData(
+            snapshot=snapshot,
+            readings=readings,
+            data_source="Live FRED data",
+            status="Connected",
+        )
+
+    except FREDProviderError as error:
+        return EconomicDashboardData(
+            snapshot=load_sample_snapshot(),
+            readings=None,
+            data_source="Sample fallback",
+            status=f"FRED unavailable: {error}",
+        )
+
+
+def load_best_available_snapshot() -> tuple[MarketSnapshot, str]:
+    """Return the best available snapshot for the CIO pipeline."""
+
+    dashboard_data = load_dashboard_data()
+
+    return (
+        dashboard_data.snapshot,
+        dashboard_data.data_source,
+    )
