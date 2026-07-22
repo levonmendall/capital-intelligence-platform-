@@ -2,7 +2,7 @@
 
 from core.database import get_connection, initialize_database
 from intelligence.models import CIODecision
-from intelligence.provider import load_best_available_snapshot
+from providers.economic_snapshot import load_best_available_snapshot
 from intelligence.regime import determine_regime
 
 
