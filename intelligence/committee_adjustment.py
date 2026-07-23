@@ -1,160 +1,151 @@
-"""
-Committee scoring adjustments.
-
-Committee members should explain every confidence adjustment
-using standardized score adjustments.
-
-These adjustments provide a complete audit trail describing
-how a committee member arrived at its final confidence.
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from enum import Enum
-
-
-class AdjustmentCategory(str, Enum):
-    """
-    Classification of confidence adjustments.
-    """
-
-    ECONOMIC = "economic"
-
-    ALLOCATION = "allocation"
-
-    DURATION = "duration"
-
-    RISK = "risk"
-
-    VALUATION = "valuation"
-
-    CREDIT = "credit"
-
-    LIQUIDITY = "liquidity"
-
-    TECHNICAL = "technical"
-
-    POLICY = "policy"
-
-    OTHER = "other"
-
-
 @dataclass(frozen=True, slots=True)
-class ScoreAdjustment:
+class AdjustmentSet:
     """
-    One individual confidence adjustment.
+    Immutable collection of score adjustments.
 
-    Positive values increase confidence.
-
-    Negative values decrease confidence.
+    This class provides aggregation, filtering, and reporting
+    functionality while preserving immutability.
     """
 
-    category: AdjustmentCategory
-
-    description: str
-
-    value: float
+    adjustments: tuple[ScoreAdjustment, ...]
 
     def __post_init__(self) -> None:
 
-        if not self.description.strip():
-            raise ValueError(
-                "description cannot be empty."
-            )
+        for adjustment in self.adjustments:
 
-        if not -1.0 <= self.value <= 1.0:
-            raise ValueError(
-                "value must be between -1.0 and 1.0."
-            )
+            if not isinstance(
+                adjustment,
+                ScoreAdjustment,
+            ):
+                raise TypeError(
+                    "adjustments must contain only "
+                    "ScoreAdjustment objects."
+                )
 
-    @property
-    def is_positive(self) -> bool:
-        return self.value > 0.0
+    def __iter__(self):
+        return iter(self.adjustments)
 
-    @property
-    def is_negative(self) -> bool:
-        return self.value < 0.0
+    def __len__(self) -> int:
+        return len(self.adjustments)
 
-    @property
-    def is_neutral(self) -> bool:
-        return self.value == 0.0
-
-
-class AdjustmentSet(tuple[ScoreAdjustment, ...]):
-    """
-    Immutable collection of score adjustments.
-    """
+    def __getitem__(
+        self,
+        index: int,
+    ) -> ScoreAdjustment:
+        return self.adjustments[index]
 
     @property
     def total_adjustment(self) -> float:
+        """
+        Sum of every score adjustment.
+        """
+
         return round(
             sum(
                 adjustment.value
-                for adjustment in self
+                for adjustment in self.adjustments
             ),
             4,
         )
 
     @property
-    def positives(self) -> tuple[ScoreAdjustment, ...]:
+    def positives(
+        self,
+    ) -> tuple[ScoreAdjustment, ...]:
+        """
+        Positive score adjustments.
+        """
+
         return tuple(
             adjustment
-            for adjustment in self
+            for adjustment in self.adjustments
             if adjustment.is_positive
         )
 
     @property
-    def negatives(self) -> tuple[ScoreAdjustment, ...]:
+    def negatives(
+        self,
+    ) -> tuple[ScoreAdjustment, ...]:
+        """
+        Negative score adjustments.
+        """
+
         return tuple(
             adjustment
-            for adjustment in self
+            for adjustment in self.adjustments
             if adjustment.is_negative
         )
 
     @property
+    def neutrals(
+        self,
+    ) -> tuple[ScoreAdjustment, ...]:
+        """
+        Neutral score adjustments.
+        """
+
+        return tuple(
+            adjustment
+            for adjustment in self.adjustments
+            if adjustment.is_neutral
+        )
+
     def by_category(
         self,
-    ) -> dict[AdjustmentCategory, tuple[ScoreAdjustment, ...]]:
+        category: AdjustmentCategory,
+    ) -> tuple[ScoreAdjustment, ...]:
+        """
+        Return adjustments belonging to a single category.
+        """
 
-        result: dict[
-            AdjustmentCategory,
-            list[ScoreAdjustment],
-        ] = {}
+        return tuple(
+            adjustment
+            for adjustment in self.adjustments
+            if adjustment.category == category
+        )
 
-        for adjustment in self:
+    @property
+    def categories(
+        self,
+    ) -> tuple[AdjustmentCategory, ...]:
+        """
+        Categories represented in this adjustment set.
+        """
 
-            result.setdefault(
-                adjustment.category,
-                [],
-            ).append(adjustment)
-
-        return {
-            key: tuple(value)
-            for key, value in result.items()
-        }
+        return tuple(
+            sorted(
+                {
+                    adjustment.category
+                    for adjustment in self.adjustments
+                },
+                key=lambda category: category.value,
+            )
+        )
 
     def summary(self) -> str:
+        """
+        Produce a human-readable summary of every adjustment.
+        """
 
-        if not self:
+        if not self.adjustments:
             return "No score adjustments."
 
-        lines = []
+        lines: list[str] = []
 
-        for adjustment in self:
+        for adjustment in self.adjustments:
 
             sign = "+" if adjustment.value >= 0 else ""
 
             lines.append(
-                f"{sign}{adjustment.value:.2f} "
-                f"{adjustment.category.value}: "
+                f"{sign}{adjustment.value:.2f} | "
+                f"{adjustment.category.value:<10} | "
                 f"{adjustment.description}"
             )
 
         lines.append("")
+
         lines.append(
-            f"Total Adjustment: "
-            f"{self.total_adjustment:+.2f}"
+            f"Net Adjustment: {self.total_adjustment:+.2f}"
         )
 
         return "\n".join(lines)
