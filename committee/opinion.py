@@ -1,7 +1,7 @@
 """Compatibility exports for committee opinion domain models.
 
-The canonical implementations live in intelligence.committee_opinion.
-The committee package re-exports them so existing imports continue to work.
+Canonical implementations live in intelligence.committee_opinion.
+This module preserves the older committee.opinion import path.
 """
 
 from intelligence.committee_opinion import (
