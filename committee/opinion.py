@@ -1,13 +1,10 @@
-"""Meeting-oriented investment committee opinion models.
+"""Meeting-oriented investment committee opinion model.
 
 This module belongs to the collective committee-governance layer.
 
 It is intentionally distinct from ``intelligence.committee_opinion``,
 which represents standardized analytical votes produced by specialist
 intelligence committee members.
-
-This model preserves compatibility with the existing investment
-committee workflow.
 """
 
 from __future__ import annotations
@@ -22,6 +19,8 @@ def _normalize_required_text(
     *,
     field_name: str,
 ) -> str:
+    """Validate and normalize required text."""
+
     if not isinstance(value, str):
         raise TypeError(f"{field_name} must be a string")
 
@@ -38,6 +37,8 @@ def _normalize_optional_text(
     *,
     field_name: str,
 ) -> str:
+    """Validate and normalize optional text."""
+
     if value is None:
         return ""
 
@@ -52,6 +53,8 @@ def _normalize_text_collection(
     *,
     field_name: str,
 ) -> tuple[str, ...]:
+    """Normalize a collection of non-empty strings."""
+
     if values is None:
         return ()
 
@@ -67,20 +70,18 @@ def _normalize_text_collection(
             f"{field_name} must be an iterable of strings"
         ) from exc
 
-    normalized: list[str] = []
-
-    for index, value in enumerate(supplied_values):
-        normalized.append(
-            _normalize_required_text(
-                value,
-                field_name=f"{field_name}[{index}]",
-            )
+    return tuple(
+        _normalize_required_text(
+            value,
+            field_name=f"{field_name}[{index}]",
         )
-
-    return tuple(normalized)
+        for index, value in enumerate(supplied_values)
+    )
 
 
 def _normalize_confidence(value: object) -> float:
+    """Validate confidence within the inclusive 0–1 range."""
+
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError("confidence must be numeric")
 
@@ -98,6 +99,8 @@ def _normalize_confidence(value: object) -> float:
 
 
 def _member_specialty(member: object) -> str:
+    """Derive a human-readable specialty from a member object."""
+
     for attribute_name in (
         "specialty",
         "display_name",
@@ -122,13 +125,18 @@ def _member_specialty(member: object) -> str:
 
 @dataclass(frozen=True, slots=True, init=False)
 class CommitteeOpinion:
-    """An opinion submitted during an investment committee meeting."""
+    """An opinion submitted during an investment committee meeting.
+
+    ``member`` is the preferred identifier. ``specialty`` remains
+    available for compatibility with older callers.
+    """
 
     member: object
     recommendation: str
     confidence: float
     rationale: str
     outlook: str
+    evidence: tuple[str, ...]
     risks: tuple[str, ...]
     opportunities: tuple[str, ...]
     _specialty: str
@@ -142,6 +150,7 @@ class CommitteeOpinion:
         member: object | None = None,
         specialty: str | None = None,
         outlook: str | None = None,
+        evidence: Iterable[str] | None = None,
         risks: Iterable[str] | None = None,
         opportunities: Iterable[str] | None = None,
     ) -> None:
@@ -173,11 +182,7 @@ class CommitteeOpinion:
         if member is None:
             member = normalized_specialty
 
-        object.__setattr__(
-            self,
-            "member",
-            member,
-        )
+        object.__setattr__(self, "member", member)
         object.__setattr__(
             self,
             "recommendation",
@@ -209,6 +214,14 @@ class CommitteeOpinion:
         )
         object.__setattr__(
             self,
+            "evidence",
+            _normalize_text_collection(
+                evidence,
+                field_name="evidence",
+            ),
+        )
+        object.__setattr__(
+            self,
             "risks",
             _normalize_text_collection(
                 risks,
@@ -231,7 +244,13 @@ class CommitteeOpinion:
 
     @property
     def specialty(self) -> str:
+        """Return the member's human-readable specialty."""
+
         return self._specialty
+
+    @property
+    def has_evidence(self) -> bool:
+        return bool(self.evidence)
 
     @property
     def has_risks(self) -> bool:
@@ -250,6 +269,8 @@ class CommitteeOpinion:
         return self.confidence >= 0.75
 
     def summary(self) -> str:
+        """Return a deterministic meeting summary."""
+
         outlook_text = (
             f" | Outlook {self.outlook}"
             if self.outlook
@@ -260,6 +281,7 @@ class CommitteeOpinion:
             f"{self.specialty}: {self.recommendation} | "
             f"Confidence {self.confidence:.2%}"
             f"{outlook_text} | "
+            f"{len(self.evidence)} evidence items | "
             f"{len(self.risks)} risks | "
             f"{len(self.opportunities)} opportunities"
         )
