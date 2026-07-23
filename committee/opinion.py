@@ -1,10 +1,7 @@
-"""Meeting-oriented investment committee opinion model.
+"""Opinion model used by the investment committee meeting layer.
 
-This module belongs to the collective committee-governance layer.
-
-It is intentionally distinct from ``intelligence.committee_opinion``,
-which represents standardized analytical votes produced by specialist
-intelligence committee members.
+This model is intentionally separate from
+``intelligence.committee_opinion.CommitteeOpinion``.
 """
 
 from __future__ import annotations
@@ -14,13 +11,11 @@ from math import isfinite
 from typing import Iterable
 
 
-def _normalize_required_text(
+def _required_text(
     value: object,
     *,
     field_name: str,
 ) -> str:
-    """Validate and normalize required text."""
-
     if not isinstance(value, str):
         raise TypeError(f"{field_name} must be a string")
 
@@ -32,221 +27,141 @@ def _normalize_required_text(
     return normalized
 
 
-def _normalize_optional_text(
-    value: object,
-    *,
-    field_name: str,
-) -> str:
-    """Validate and normalize optional text."""
-
-    if value is None:
-        return ""
-
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-
-    return value.strip()
-
-
-def _normalize_text_collection(
+def _text_tuple(
     values: Iterable[str] | None,
     *,
     field_name: str,
 ) -> tuple[str, ...]:
-    """Normalize a collection of non-empty strings."""
-
     if values is None:
         return ()
 
     if isinstance(values, str):
         raise TypeError(
-            f"{field_name} must be an iterable of strings, not a string"
+            f"{field_name} must be an iterable of strings"
         )
 
     try:
-        supplied_values = tuple(values)
+        supplied = tuple(values)
     except TypeError as exc:
         raise TypeError(
             f"{field_name} must be an iterable of strings"
         ) from exc
 
     return tuple(
-        _normalize_required_text(
+        _required_text(
             value,
             field_name=f"{field_name}[{index}]",
         )
-        for index, value in enumerate(supplied_values)
+        for index, value in enumerate(supplied)
     )
 
 
-def _normalize_confidence(value: object) -> float:
-    """Validate confidence within the inclusive 0–1 range."""
-
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+def _confidence(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(
+        value,
+        (int, float),
+    ):
         raise TypeError("confidence must be numeric")
 
-    confidence = float(value)
+    normalized = float(value)
 
-    if not isfinite(confidence):
+    if not isfinite(normalized):
         raise ValueError("confidence must be finite")
 
-    if not 0.0 <= confidence <= 1.0:
+    if not 0.0 <= normalized <= 1.0:
         raise ValueError(
             "confidence must be between 0.0 and 1.0"
         )
 
-    return round(confidence, 4)
+    return round(normalized, 4)
 
 
-def _member_specialty(member: object) -> str:
-    """Derive a human-readable specialty from a member object."""
-
-    for attribute_name in (
-        "specialty",
-        "display_name",
-        "name",
-        "role",
-    ):
-        value = getattr(member, attribute_name, None)
-
-        if value is None:
-            continue
-
-        enum_value = getattr(value, "value", value)
-
-        if isinstance(enum_value, str) and enum_value.strip():
-            return enum_value.strip()
-
-    if isinstance(member, str) and member.strip():
-        return member.strip()
-
-    return member.__class__.__name__
-
-
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, slots=True)
 class CommitteeOpinion:
-    """An opinion submitted during an investment committee meeting.
+    """Opinion submitted by a member during a committee meeting."""
 
-    ``member`` is the preferred identifier. ``specialty`` remains
-    available for compatibility with older callers.
-    """
-
-    member: object
-    recommendation: str
-    confidence: float
-    rationale: str
+    member: str
+    specialty: str
     outlook: str
-    evidence: tuple[str, ...]
-    risks: tuple[str, ...]
-    opportunities: tuple[str, ...]
-    _specialty: str
+    confidence: float
+    recommendation: str
+    evidence: tuple[str, ...] = ()
+    risks: tuple[str, ...] = ()
+    opportunities: tuple[str, ...] = ()
 
-    def __init__(
-        self,
-        *,
-        recommendation: str,
-        confidence: float,
-        rationale: str,
-        member: object | None = None,
-        specialty: str | None = None,
-        outlook: str | None = None,
-        evidence: Iterable[str] | None = None,
-        risks: Iterable[str] | None = None,
-        opportunities: Iterable[str] | None = None,
-    ) -> None:
-        if member is None and specialty is None:
-            raise ValueError(
-                "either member or specialty must be provided"
-            )
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "member",
+            _required_text(
+                self.member,
+                field_name="member",
+            ),
+        )
 
-        if specialty is not None:
-            normalized_specialty = _normalize_required_text(
-                specialty,
+        object.__setattr__(
+            self,
+            "specialty",
+            _required_text(
+                self.specialty,
                 field_name="specialty",
-            )
-        else:
-            normalized_specialty = _member_specialty(member)
-
-        if member is not None and specialty is not None:
-            derived_specialty = _member_specialty(member)
-
-            if (
-                derived_specialty.casefold()
-                != normalized_specialty.casefold()
-            ):
-                raise ValueError(
-                    "member and specialty describe different "
-                    "committee roles"
-                )
-
-        if member is None:
-            member = normalized_specialty
-
-        object.__setattr__(self, "member", member)
-        object.__setattr__(
-            self,
-            "recommendation",
-            _normalize_required_text(
-                recommendation,
-                field_name="recommendation",
             ),
         )
-        object.__setattr__(
-            self,
-            "confidence",
-            _normalize_confidence(confidence),
-        )
-        object.__setattr__(
-            self,
-            "rationale",
-            _normalize_required_text(
-                rationale,
-                field_name="rationale",
-            ),
-        )
+
         object.__setattr__(
             self,
             "outlook",
-            _normalize_optional_text(
-                outlook,
+            _required_text(
+                self.outlook,
                 field_name="outlook",
             ),
         )
+
+        object.__setattr__(
+            self,
+            "confidence",
+            _confidence(self.confidence),
+        )
+
+        object.__setattr__(
+            self,
+            "recommendation",
+            _required_text(
+                self.recommendation,
+                field_name="recommendation",
+            ),
+        )
+
         object.__setattr__(
             self,
             "evidence",
-            _normalize_text_collection(
-                evidence,
+            _text_tuple(
+                self.evidence,
                 field_name="evidence",
             ),
         )
+
         object.__setattr__(
             self,
             "risks",
-            _normalize_text_collection(
-                risks,
+            _text_tuple(
+                self.risks,
                 field_name="risks",
             ),
         )
+
         object.__setattr__(
             self,
             "opportunities",
-            _normalize_text_collection(
-                opportunities,
+            _text_tuple(
+                self.opportunities,
                 field_name="opportunities",
             ),
         )
-        object.__setattr__(
-            self,
-            "_specialty",
-            normalized_specialty,
-        )
 
     @property
-    def specialty(self) -> str:
-        """Return the member's human-readable specialty."""
-
-        return self._specialty
+    def is_high_confidence(self) -> bool:
+        return self.confidence >= 0.75
 
     @property
     def has_evidence(self) -> bool:
@@ -260,27 +175,12 @@ class CommitteeOpinion:
     def has_opportunities(self) -> bool:
         return bool(self.opportunities)
 
-    @property
-    def has_outlook(self) -> bool:
-        return bool(self.outlook)
-
-    @property
-    def is_high_confidence(self) -> bool:
-        return self.confidence >= 0.75
-
     def summary(self) -> str:
-        """Return a deterministic meeting summary."""
-
-        outlook_text = (
-            f" | Outlook {self.outlook}"
-            if self.outlook
-            else ""
-        )
-
         return (
-            f"{self.specialty}: {self.recommendation} | "
-            f"Confidence {self.confidence:.2%}"
-            f"{outlook_text} | "
+            f"{self.member} ({self.specialty}) | "
+            f"{self.recommendation} | "
+            f"Confidence {self.confidence:.2%} | "
+            f"Outlook: {self.outlook} | "
             f"{len(self.evidence)} evidence items | "
             f"{len(self.risks)} risks | "
             f"{len(self.opportunities)} opportunities"
