@@ -16,6 +16,8 @@ Foundation Version 1.0
 - Measure portfolio performance over time
 
 ## Planned Architecture
+intelligence = analysis and individual committee judgment
+committee = meeting orchestration and collective governance
 
 ```text
 app.py
