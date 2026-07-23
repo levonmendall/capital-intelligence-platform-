@@ -1,6 +1,6 @@
 # Capital Intelligence Platform
 
-An explainable, AI-assisted investment operating system for disciplined research, portfolio management, and paper trading thesis.
+An explainable, AI-assisted investment operating system for disciplined research, portfolio management, and paper trading.
 
 ## Current Release
 
