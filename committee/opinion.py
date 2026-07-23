@@ -1,16 +1,13 @@
 """Meeting-oriented investment committee opinion models.
 
-This module belongs to the collective governance layer. It represents
-the qualitative opinion submitted by an existing committee member
-during an investment committee meeting.
+This module belongs to the collective committee-governance layer.
 
-It is intentionally distinct from:
+It is intentionally distinct from ``intelligence.committee_opinion``,
+which represents standardized analytical votes produced by specialist
+intelligence committee members.
 
-    intelligence.committee_opinion
-
-The intelligence model represents standardized specialist votes and
-confidence assessments. This model supports the existing committee
-meeting and consensus workflow.
+This model maintains compatibility with both the newer ``member=``
+interface and the older ``specialty=`` interface.
 """
 
 from __future__ import annotations
@@ -38,28 +35,12 @@ def _normalize_required_text(
     return normalized
 
 
-def _normalize_optional_text(
-    value: object,
-    *,
-    field_name: str,
-) -> str:
-    """Validate and normalize optional text."""
-
-    if value is None:
-        return ""
-
-    if not isinstance(value, str):
-        raise TypeError(f"{field_name} must be a string")
-
-    return value.strip()
-
-
 def _normalize_text_collection(
     values: Iterable[str] | None,
     *,
     field_name: str,
 ) -> tuple[str, ...]:
-    """Convert a collection of text values into an immutable tuple."""
+    """Normalize an iterable of text values."""
 
     if values is None:
         return ()
@@ -90,7 +71,7 @@ def _normalize_text_collection(
 
 
 def _normalize_confidence(value: object) -> float:
-    """Validate and normalize a confidence score."""
+    """Validate and normalize confidence."""
 
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError("confidence must be numeric")
@@ -108,115 +89,153 @@ def _normalize_confidence(value: object) -> float:
     return round(confidence, 4)
 
 
-@dataclass(frozen=True, slots=True)
+def _member_specialty(member: object) -> str:
+    """Derive a human-readable specialty from a committee member."""
+
+    for attribute_name in (
+        "specialty",
+        "display_name",
+        "name",
+        "role",
+    ):
+        value = getattr(member, attribute_name, None)
+
+        if value is None:
+            continue
+
+        enum_value = getattr(value, "value", value)
+
+        if isinstance(enum_value, str) and enum_value.strip():
+            return enum_value.strip()
+
+    if isinstance(member, str) and member.strip():
+        return member.strip()
+
+    return member.__class__.__name__
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class CommitteeOpinion:
-    """An opinion submitted during an investment committee meeting.
+    """An opinion submitted during a committee meeting.
 
-    Attributes:
-        specialty:
-            Committee member's area of expertise, such as Macro,
-            Risk, Credit, or Valuation.
-
-        recommendation:
-            Concise recommendation or position supplied by the member.
-
-        confidence:
-            Confidence in the opinion, expressed from 0.0 through 1.0.
-
-        rationale:
-            Explanation supporting the recommendation.
-
-        risks:
-            Material risks identified by the member.
-
-        opportunities:
-            Material opportunities identified by the member.
+    Either ``member`` or ``specialty`` may be supplied. ``member`` is
+    the preferred interface. ``specialty`` remains supported for older
+    callers.
     """
 
-    specialty: str
+    member: object
     recommendation: str
     confidence: float
     rationale: str
-    risks: tuple[str, ...] = ()
-    opportunities: tuple[str, ...] = ()
+    risks: tuple[str, ...]
+    opportunities: tuple[str, ...]
+    _specialty: str
 
-    def __post_init__(self) -> None:
-        specialty = _normalize_required_text(
-            self.specialty,
-            field_name="specialty",
-        )
+    def __init__(
+        self,
+        *,
+        recommendation: str,
+        confidence: float,
+        rationale: str,
+        member: object | None = None,
+        specialty: str | None = None,
+        risks: Iterable[str] | None = None,
+        opportunities: Iterable[str] | None = None,
+    ) -> None:
+        if member is None and specialty is None:
+            raise ValueError(
+                "either member or specialty must be provided"
+            )
 
-        recommendation = _normalize_required_text(
-            self.recommendation,
+        normalized_specialty: str
+
+        if specialty is not None:
+            normalized_specialty = _normalize_required_text(
+                specialty,
+                field_name="specialty",
+            )
+        else:
+            normalized_specialty = _member_specialty(member)
+
+        if member is None:
+            member = normalized_specialty
+
+        normalized_recommendation = _normalize_required_text(
+            recommendation,
             field_name="recommendation",
         )
 
-        confidence = _normalize_confidence(
-            self.confidence
+        normalized_confidence = _normalize_confidence(
+            confidence
         )
 
-        rationale = _normalize_required_text(
-            self.rationale,
+        normalized_rationale = _normalize_required_text(
+            rationale,
             field_name="rationale",
         )
 
-        risks = _normalize_text_collection(
-            self.risks,
+        normalized_risks = _normalize_text_collection(
+            risks,
             field_name="risks",
         )
 
-        opportunities = _normalize_text_collection(
-            self.opportunities,
+        normalized_opportunities = _normalize_text_collection(
+            opportunities,
             field_name="opportunities",
         )
 
         object.__setattr__(
             self,
-            "specialty",
-            specialty,
+            "member",
+            member,
         )
         object.__setattr__(
             self,
             "recommendation",
-            recommendation,
+            normalized_recommendation,
         )
         object.__setattr__(
             self,
             "confidence",
-            confidence,
+            normalized_confidence,
         )
         object.__setattr__(
             self,
             "rationale",
-            rationale,
+            normalized_rationale,
         )
         object.__setattr__(
             self,
             "risks",
-            risks,
+            normalized_risks,
         )
         object.__setattr__(
             self,
             "opportunities",
-            opportunities,
+            normalized_opportunities,
+        )
+        object.__setattr__(
+            self,
+            "_specialty",
+            normalized_specialty,
         )
 
     @property
-    def has_risks(self) -> bool:
-        """Return whether the member identified material risks."""
+    def specialty(self) -> str:
+        """Return the member's human-readable specialty."""
 
+        return self._specialty
+
+    @property
+    def has_risks(self) -> bool:
         return bool(self.risks)
 
     @property
     def has_opportunities(self) -> bool:
-        """Return whether the member identified opportunities."""
-
         return bool(self.opportunities)
 
     @property
     def is_high_confidence(self) -> bool:
-        """Return whether confidence meets the high-confidence level."""
-
         return self.confidence >= 0.75
 
     def summary(self) -> str:
