@@ -1,123 +1,143 @@
-"""Institutional Investment Committee."""
+"""Final decision produced by the intelligence-layer Investment Committee."""
 
 from __future__ import annotations
 
-from intelligence.committee_members.credit import (
-    CreditCommitteeMember,
+from dataclasses import dataclass
+from math import isfinite
+
+from intelligence.committee_opinion import (
+    CommitteeOpinion,
+    CommitteeOpinionSet,
 )
-from intelligence.committee_members.liquidity import (
-    LiquidityCommitteeMember,
+from intelligence.investment_committee_consensus import (
+    InvestmentCommitteeConsensus,
 )
-from intelligence.committee_members.macro import (
-    MacroCommitteeMember,
-)
-from intelligence.committee_members.risk import (
-    RiskCommitteeMember,
-)
-from intelligence.committee_members.technical import (
-    TechnicalCommitteeMember,
-)
-from intelligence.committee_members.valuation import (
-    ValuationCommitteeMember,
-)
-from intelligence.investment_committee_decision import (
-    InvestmentCommitteeDecision,
-)
-from intelligence.recommendation import (
-    InvestmentRecommendation,
-)
+from intelligence.recommendation import InvestmentRecommendation
 
 
-class InvestmentCommittee:
-    """
-    Coordinates all specialist committee members and
-    produces a final institutional decision.
-    """
+@dataclass(frozen=True, slots=True)
+class InvestmentCommitteeDecision:
+    """Immutable institutional decision for one recommendation."""
 
-    def __init__(self) -> None:
+    recommendation: InvestmentRecommendation
+    consensus: InvestmentCommitteeConsensus
+    confidence: float
+    opinions: CommitteeOpinionSet
+    strengths: tuple[str, ...] = ()
+    concerns: tuple[str, ...] = ()
+    required_changes: tuple[str, ...] = ()
+    vetoes: tuple[CommitteeOpinion, ...] = ()
 
-        self.members = (
-            MacroCommitteeMember(),
-            RiskCommitteeMember(),
-            CreditCommitteeMember(),
-            LiquidityCommitteeMember(),
-            ValuationCommitteeMember(),
-            TechnicalCommitteeMember(),
-        )
-
-    def evaluate(
-        self,
-        recommendation: InvestmentRecommendation,
-    ) -> InvestmentCommitteeDecision:
-
-        assessments = tuple(
-            member.assess(recommendation)
-            for member in self.members
-        )
-
-        opinions = tuple(
-            assessment.to_opinion()
-            for assessment in assessments
-        )
-
-        confidence = (
-            sum(
-                opinion.confidence
-                for opinion in opinions
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.recommendation,
+            InvestmentRecommendation,
+        ):
+            raise TypeError(
+                "recommendation must be an InvestmentRecommendation"
             )
-            / len(opinions)
+
+        if not isinstance(
+            self.consensus,
+            InvestmentCommitteeConsensus,
+        ):
+            raise TypeError(
+                "consensus must be an "
+                "InvestmentCommitteeConsensus"
+            )
+
+        if isinstance(self.confidence, bool) or not isinstance(
+            self.confidence,
+            (int, float),
+        ):
+            raise TypeError("confidence must be numeric")
+
+        confidence = float(self.confidence)
+
+        if not isfinite(confidence):
+            raise ValueError("confidence must be finite")
+
+        if not 0.0 <= confidence <= 1.0:
+            raise ValueError(
+                "confidence must be between 0.0 and 1.0"
+            )
+
+        if not isinstance(
+            self.opinions,
+            CommitteeOpinionSet,
+        ):
+            raise TypeError(
+                "opinions must be a CommitteeOpinionSet"
+            )
+
+        if (
+            self.opinions.recommendation_identifier is not None
+            and self.opinions.recommendation_identifier
+            != self.recommendation.identifier
+        ):
+            raise ValueError(
+                "opinions must reference the decision recommendation"
+            )
+
+        for field_name in (
+            "strengths",
+            "concerns",
+            "required_changes",
+        ):
+            values = getattr(self, field_name)
+
+            if not isinstance(values, tuple):
+                raise TypeError(
+                    f"{field_name} must be a tuple"
+                )
+
+            if not all(
+                isinstance(item, str) and item.strip()
+                for item in values
+            ):
+                raise ValueError(
+                    f"{field_name} must contain non-empty strings"
+                )
+
+        if not isinstance(self.vetoes, tuple):
+            raise TypeError("vetoes must be a tuple")
+
+        if not all(
+            isinstance(opinion, CommitteeOpinion)
+            for opinion in self.vetoes
+        ):
+            raise TypeError(
+                "vetoes must contain CommitteeOpinion objects"
+            )
+
+        if not all(
+            opinion.is_opposed
+            for opinion in self.vetoes
+        ):
+            raise ValueError(
+                "every veto must be an opposed opinion"
+            )
+
+        object.__setattr__(
+            self,
+            "confidence",
+            round(confidence, 4),
         )
 
-        strengths = tuple(
-            {
-                item
-                for opinion in opinions
-                for item in opinion.strengths
-            }
-        )
+    @property
+    def approved(self) -> bool:
+        """Whether the consensus permits approval."""
 
-        concerns = tuple(
-            {
-                item
-                for opinion in opinions
-                for item in opinion.concerns
-            }
-        )
+        return self.consensus.approved
 
-        suggested_changes = tuple(
-            {
-                item
-                for opinion in opinions
-                for item in opinion.suggested_changes
-            }
-        )
+    @property
+    def has_veto(self) -> bool:
+        """Whether a veto-capable member blocked approval."""
 
-        vetoes = tuple(
-            opinion
-            for opinion in opinions
-            if getattr(opinion.vote, "is_veto", False)
-        )
+        return bool(self.vetoes)
 
-        approved = (
-            len(vetoes) == 0
-            and confidence >= 0.60
-        )
+    @property
+    def opinion_count(self) -> int:
+        """Number of specialist opinions included."""
 
-        if approved:
-            consensus = "APPROVED"
-        elif vetoes:
-            consensus = "REJECTED"
-        else:
-            consensus = "DEFERRED"
-
-        return InvestmentCommitteeDecision(
-            recommendation=recommendation,
-            consensus=consensus,
-            confidence=confidence,
-            approved=approved,
-            opinions=opinions,
-            strengths=strengths,
-            concerns=concerns,
-            required_changes=suggested_changes,
-            vetoes=vetoes,
-        )
+        return len(self.opinions)
