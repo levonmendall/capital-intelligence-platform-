@@ -1,10 +1,19 @@
-"""Transparent market-regime classification engine."""
+"""Transparent market-regime classification compatibility facade."""
 
+from economic_regime import (
+    EconomicRegimeEngine,
+    EconomicRegimeInputs,
+    EconomicRegimeResult,
+)
 from intelligence.models import MarketSnapshot
 
 
 def determine_regime(snapshot: MarketSnapshot) -> tuple[str, float]:
-    """Determine the most likely market regime and confidence level."""
+    """Return the legacy allocation regime and confidence level.
+
+    This public function remains stable for the existing allocation pipeline.
+    New institutional consumers should call :func:`evaluate_economic_regime`.
+    """
 
     expansion_score = (
         snapshot.growth
@@ -27,3 +36,30 @@ def determine_regime(snapshot: MarketSnapshot) -> tuple[str, float]:
         return "Recession", 0.80
 
     return "Slowdown", 0.68
+
+
+def evaluate_economic_regime(
+    snapshot: MarketSnapshot,
+    *,
+    policy: float | None = None,
+    liquidity: float | None = None,
+    financial_stress: float | None = None,
+) -> EconomicRegimeResult:
+    """Map the legacy snapshot into the institutional regime engine."""
+
+    if not isinstance(snapshot, MarketSnapshot):
+        raise TypeError("snapshot must be a MarketSnapshot")
+
+    return EconomicRegimeEngine().evaluate(
+        EconomicRegimeInputs(
+            growth=snapshot.growth,
+            inflation=snapshot.inflation,
+            policy=policy,
+            liquidity=liquidity,
+            financial_stress=(
+                snapshot.volatility
+                if financial_stress is None
+                else financial_stress
+            ),
+        )
+    )

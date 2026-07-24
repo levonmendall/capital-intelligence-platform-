@@ -6,6 +6,15 @@ An explainable, AI-assisted investment operating system for disciplined research
 
 Foundation Version 1.0
 
+The active integration milestone adds a deterministic, explainable
+`economic_regime` bounded context while preserving the legacy allocation
+interface. See:
+
+- [Architecture](ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)
+- [Data sources and governance](DATA_SOURCES.md)
+- [Institutional decision engine](DECISION_ENGINE.md)
+
 ## Core Objectives
 
 - Analyze changing market conditions
@@ -67,6 +76,7 @@ intelligence/
 dashboard/
 config/
 database/
+economic_regime/
 tests/
 docs/
 .github/workflows/
