@@ -127,6 +127,26 @@ meeting model and must not be confused with recommendation governance. See
 [ADR-0001](docs/architecture/ADR-0001-committee-ownership.md) and the
 [canonical decision pipeline](docs/DECISION_PIPELINE.md).
 
+## Decision-discipline integration
+
+`intelligence.decision_discipline` owns thesis lifecycle, falsification
+triggers, evidence-trust dimensions, scenarios, and versioned cross-asset
+transmission assumptions. Lifecycle changes are append-only transitions:
+proposed, active, challenged, invalidated, and closed. Closed theses cannot be
+silently reactivated.
+
+`committee.decision_discipline` owns structured minority opinions and formal
+no-action decisions. Dissent records the member, specialty, position, evidence,
+materiality, and conditions that could resolve disagreement. No action is a
+terminal, reviewable committee outcome with evidence, rationale, future action
+triggers, and a review date; it is not an omitted decision.
+
+`evaluation.decision_quality` owns retrospective classification. Process
+verdict and realized outcome remain separate so a disciplined loss is not
+treated as bad process and a lucky gain does not validate flawed process. The
+evaluation layer appends reviews to decision history and never rewrites the
+original evidence or conclusion.
+
 ## Versioning and auditability
 
 Every persisted recommendation and decision should eventually include:

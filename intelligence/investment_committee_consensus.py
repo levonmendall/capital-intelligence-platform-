@@ -15,6 +15,7 @@ class InvestmentCommitteeConsensus(str, Enum):
     APPROVAL_WITH_CONDITIONS = (
         "approval_with_conditions"
     )
+    NO_ACTION = "no_action"
     DEFER = "defer"
     REJECT = "reject"
 
@@ -35,5 +36,6 @@ class InvestmentCommitteeConsensus(str, Enum):
         return self in {
             self.STRONG_APPROVAL,
             self.APPROVAL,
+            self.NO_ACTION,
             self.REJECT,
         }
