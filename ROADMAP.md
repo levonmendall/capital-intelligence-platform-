@@ -53,8 +53,20 @@ produce false precision.
 - [x] Implement a canonical FRED adapter with point-in-time boundaries.
 - [x] Record whether availability uses provider dates or retrieval proxies.
 - [x] Add a version-controlled registry for foundation FRED series.
+- [x] Add canonical issuer, listing, filing, and company-fact contracts.
+- [x] Generalize identity across equities, funds, fixed income, FX,
+  commodities, and crypto.
+- [x] Separate issuer identity, instrument identity, and venue symbols.
+- [x] Support crypto networks, contract addresses, trading pairs,
+  perpetuals, and continuous 24/7 listings.
+- [x] Add current SEC security-master snapshots with ambiguity protection.
+- [x] Add offline SEC submissions and company-facts retrieval.
+- [x] Enforce SEC acceptance timestamps and preserve amended filings.
 - Implement resilient FRED retrieval with caching, rate-limit handling,
   freshness rules, and local fixtures.
+- Retrieve older SEC submission archive files and dimensional XBRL metadata.
+- Add historical identifiers, corporate actions, and delisted securities from
+  a licensed reference provider.
 - Persist observation time, release time, revision/vintage, unit, frequency,
   transformation, and provenance.
 - Add deterministic fallback and data-quality policies.
@@ -77,6 +89,11 @@ Implement, in order:
 Each engine must publish a typed result with score, confidence, coverage,
 evidence, risks, and versioned rules.
 
+Market-data contracts must support exchange-session and 24/7 instruments,
+venue-specific spot and derivative prices, quote and settlement currencies,
+funding rates, open interest, liquidations, and explicitly governed
+cross-venue consolidation.
+
 ## Milestone 5 — Institutional market decision
 
 - Normalize engine results.
@@ -87,7 +104,8 @@ evidence, risks, and versioned rules.
 
 ## Milestone 6 — Stock intelligence
 
-- Build normalized company and financial-statement models.
+- [x] Establish issuer/listing identity and raw point-in-time SEC fact models.
+- Build normalized company and financial-statement models from canonical facts.
 - Add quality, financial strength, growth, earnings quality, valuation,
   momentum, regime-fit, and company-risk engines.
 - Generate an institutional stock report.
