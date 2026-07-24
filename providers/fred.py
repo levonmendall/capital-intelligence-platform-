@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import time as time_module
 from dataclasses import dataclass
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from collections.abc import Callable
 from typing import Any
 
@@ -19,6 +20,12 @@ from data import (
     ObservationTrend,
     ProviderError,
 )
+from providers.fred_cache import (
+    FREDCache,
+    FREDCacheRecord,
+    MemoryFREDCache,
+    fred_cache_key,
+)
 
 
 FRED_OBSERVATIONS_URL = (
@@ -28,6 +35,50 @@ FRED_OBSERVATIONS_URL = (
 
 class FREDProviderError(ProviderError):
     """Raised when FRED data cannot be retrieved or interpreted."""
+
+
+@dataclass(frozen=True, slots=True)
+class FREDRetrievalPolicy:
+    """Freshness, retry, and stale-fallback rules for FRED."""
+
+    fresh_for: timedelta = timedelta(minutes=15)
+    stale_if_error_for: timedelta = timedelta(days=7)
+    max_attempts: int = 3
+    backoff_seconds: float = 0.25
+    retry_statuses: frozenset[int] = frozenset(
+        {429, 500, 502, 503, 504}
+    )
+
+    def __post_init__(self) -> None:
+        if self.fresh_for < timedelta(0):
+            raise ValueError("fresh_for cannot be negative")
+        if self.stale_if_error_for < self.fresh_for:
+            raise ValueError(
+                "stale_if_error_for cannot be shorter than fresh_for"
+            )
+        if isinstance(self.max_attempts, bool) or not isinstance(
+            self.max_attempts,
+            int,
+        ):
+            raise TypeError("max_attempts must be an int")
+        if self.max_attempts < 1:
+            raise ValueError("max_attempts must be at least 1")
+        if isinstance(self.backoff_seconds, bool) or not isinstance(
+            self.backoff_seconds,
+            (int, float),
+        ):
+            raise TypeError("backoff_seconds must be numeric")
+        if self.backoff_seconds < 0:
+            raise ValueError("backoff_seconds cannot be negative")
+        if not self.retry_statuses:
+            raise ValueError("retry_statuses cannot be empty")
+
+
+@dataclass(frozen=True, slots=True)
+class _PayloadResult:
+    payload: dict[str, Any]
+    retrieved_at: datetime
+    quality_state: DataQualityState
 
 
 @dataclass(frozen=True)
@@ -50,6 +101,9 @@ class FREDProvider:
         *,
         clock: Callable[[], datetime] | None = None,
         http_get: Callable[..., Any] | None = None,
+        cache: FREDCache | None = None,
+        retrieval_policy: FREDRetrievalPolicy | None = None,
+        sleeper: Callable[[float], None] | None = None,
     ) -> None:
         self.api_key = api_key or os.getenv("FRED_API_KEY")
         self.timeout = timeout
@@ -57,6 +111,11 @@ class FREDProvider:
             lambda: datetime.now(timezone.utc)
         )
         self._http_get = http_get or requests.get
+        self._cache = cache or MemoryFREDCache()
+        self._retrieval_policy = (
+            retrieval_policy or FREDRetrievalPolicy()
+        )
+        self._sleeper = sleeper or time_module.sleep
 
     @property
     def name(self) -> str:
@@ -91,22 +150,11 @@ class FREDProvider:
             "sort_order": sort_order,
         }
 
-        try:
-            response = self._http_get(
-                FRED_OBSERVATIONS_URL,
-                params=parameters,
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-            payload: dict[str, Any] = response.json()
-        except requests.RequestException as error:
-            raise FREDProviderError(
-                f"FRED request failed for {series_id}: {error}"
-            ) from error
-        except ValueError as error:
-            raise FREDProviderError(
-                f"FRED returned invalid JSON for {series_id}."
-            ) from error
+        payload = self._request_payload(
+            series_id,
+            parameters,
+            requested_at=self._now(),
+        ).payload
 
         observations = []
 
@@ -167,16 +215,7 @@ class FREDProvider:
                 "FRED_API_KEY is not configured."
             )
 
-        retrieved_at = self._clock()
-        if (
-            not isinstance(retrieved_at, datetime)
-            or retrieved_at.tzinfo is None
-            or retrieved_at.utcoffset() is None
-        ):
-            raise FREDProviderError(
-                "FRED provider clock must return a "
-                "timezone-aware datetime."
-            )
+        requested_at = self._now()
 
         series = query.series
         parameters = {
@@ -189,10 +228,13 @@ class FREDProvider:
             "vintage_dates": query.as_of.date().isoformat(),
         }
 
-        payload = self._request_payload(
+        result = self._request_payload(
             series.provider_series_identifier,
             parameters,
+            requested_at=requested_at,
         )
+        payload = result.payload
+        retrieved_at = result.retrieved_at
         observations: list[NormalizedObservation] = []
 
         for item in payload.get("observations", []):
@@ -235,7 +277,7 @@ class FREDProvider:
                         ),
                         released_at=released_at,
                         retrieved_at=retrieved_at,
-                        quality_state=DataQualityState.LIVE,
+                        quality_state=result.quality_state,
                         vintage_date=realtime_start,
                         availability_basis=availability_basis,
                     ),
@@ -258,29 +300,109 @@ class FREDProvider:
         self,
         series_id: str,
         parameters: dict[str, Any],
-    ) -> dict[str, Any]:
-        try:
-            response = self._http_get(
-                FRED_OBSERVATIONS_URL,
-                params=parameters,
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-            payload = response.json()
-        except requests.RequestException as error:
-            raise FREDProviderError(
-                f"FRED request failed for {series_id}: {error}"
-            ) from error
-        except ValueError as error:
-            raise FREDProviderError(
-                f"FRED returned invalid JSON for {series_id}."
-            ) from error
+        *,
+        requested_at: datetime,
+    ) -> _PayloadResult:
+        cache_key = fred_cache_key(
+            FRED_OBSERVATIONS_URL,
+            parameters,
+        )
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            age = requested_at - cached.retrieved_at
+            if timedelta(0) <= age <= (
+                self._retrieval_policy.fresh_for
+            ):
+                return _PayloadResult(
+                    payload=cached.payload,
+                    retrieved_at=cached.retrieved_at,
+                    quality_state=DataQualityState.CACHED,
+                )
 
-        if not isinstance(payload, dict):
+        last_error: Exception | None = None
+        for attempt in range(
+            1,
+            self._retrieval_policy.max_attempts + 1,
+        ):
+            try:
+                response = self._http_get(
+                    FRED_OBSERVATIONS_URL,
+                    params=parameters,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                payload = response.json()
+                if not isinstance(payload, dict):
+                    raise FREDProviderError(
+                        "FRED returned an invalid payload for "
+                        f"{series_id}."
+                    )
+                record = FREDCacheRecord(
+                    key=cache_key,
+                    payload=payload,
+                    retrieved_at=requested_at,
+                )
+                self._cache.put(record)
+                return _PayloadResult(
+                    payload=record.payload,
+                    retrieved_at=record.retrieved_at,
+                    quality_state=DataQualityState.LIVE,
+                )
+            except ValueError as error:
+                raise FREDProviderError(
+                    f"FRED returned invalid JSON for {series_id}."
+                ) from error
+            except requests.RequestException as error:
+                last_error = error
+                status_code = getattr(
+                    getattr(error, "response", None),
+                    "status_code",
+                    None,
+                )
+                retryable = (
+                    status_code is None
+                    or status_code
+                    in self._retrieval_policy.retry_statuses
+                )
+                if (
+                    not retryable
+                    or attempt
+                    >= self._retrieval_policy.max_attempts
+                ):
+                    break
+                delay = (
+                    self._retrieval_policy.backoff_seconds
+                    * (2 ** (attempt - 1))
+                )
+                self._sleeper(delay)
+
+        if cached is not None:
+            age = requested_at - cached.retrieved_at
+            if timedelta(0) <= age <= (
+                self._retrieval_policy.stale_if_error_for
+            ):
+                return _PayloadResult(
+                    payload=cached.payload,
+                    retrieved_at=cached.retrieved_at,
+                    quality_state=DataQualityState.STALE,
+                )
+
+        raise FREDProviderError(
+            f"FRED request failed for {series_id}: {last_error}"
+        ) from last_error
+
+    def _now(self) -> datetime:
+        value = self._clock()
+        if (
+            not isinstance(value, datetime)
+            or value.tzinfo is None
+            or value.utcoffset() is None
+        ):
             raise FREDProviderError(
-                f"FRED returned an invalid payload for {series_id}."
+                "FRED provider clock must return a "
+                "timezone-aware datetime."
             )
-        return payload
+        return value
 
     @staticmethod
     def _parse_value(value: object) -> float | None:

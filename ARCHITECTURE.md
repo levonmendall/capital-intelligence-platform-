@@ -77,6 +77,12 @@ vintage dates are treated conservatively as available at the end of the
 provider date; when vintage metadata is absent, retrieval time is used as an
 explicit proxy rather than inventing a release timestamp.
 
+`providers.fred_cache` owns FRED response persistence. Request keys exclude
+credentials, cache writes are atomic, and records preserve the retrieval time
+of the successful response. `FREDRetrievalPolicy` makes freshness, retry, and
+stale-if-error limits explicit. Cache use changes the observation quality state
+to `cached` or `stale`; it never silently reports fallback evidence as live.
+
 `data.security` separates issuers, instruments, identifiers, and venue
 listings. The instrument model is multi-asset: equities, funds, fixed income,
 commodities, FX, and crypto may share identity infrastructure without inheriting
