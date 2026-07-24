@@ -67,8 +67,8 @@ produce false precision.
 - [x] Add current SEC security-master snapshots with ambiguity protection.
 - [x] Add offline SEC submissions and company-facts retrieval.
 - [x] Enforce SEC acceptance timestamps and preserve amended filings.
-- Implement resilient FRED retrieval with caching, rate-limit handling,
-  freshness rules, and local fixtures.
+- [x] Implement resilient FRED retrieval with caching, rate-limit handling,
+  freshness rules, stale-if-error disclosure, and local fixtures.
 - Retrieve older SEC submission archive files and dimensional XBRL metadata.
 - Add historical identifiers, corporate actions, and delisted securities from
   a licensed reference provider.

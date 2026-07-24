@@ -56,6 +56,20 @@ provider vintage date as available at the end of that UTC day. If FRED omits
 the vintage date, the retrieval timestamp becomes a conservative availability
 proxy and the provenance records `retrieval_proxy`.
 
+FRED retrieval is governed by `FREDRetrievalPolicy`. Successful responses are
+cached under a deterministic request fingerprint that excludes the API key.
+Fresh cache hits are disclosed as `cached`; an expired response may be used as
+`stale` only after retryable provider failures and only within the configured
+stale-if-error window. Rate limits, transient server responses, and transport
+errors use bounded exponential backoff. Non-retryable client errors fail
+immediately.
+
+`MemoryFREDCache` supports short-lived workers and deterministic tests.
+`JsonFREDCache` provides an atomic, human-inspectable local snapshot that can be
+seeded as an offline fixture. Cached responses retain their original retrieval
+timestamp, so a fallback never masquerades as newly retrieved evidence.
+Credentials are neither serialized nor included in cache identity.
+
 ## SEC EDGAR adapter
 
 `providers.sec_edgar.SECEdgarProvider` uses the SEC's official
