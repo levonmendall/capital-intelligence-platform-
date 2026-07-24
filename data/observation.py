@@ -20,6 +20,15 @@ class DataQualityState(str, Enum):
     MISSING = "missing"
 
 
+class AvailabilityBasis(str, Enum):
+    """How an observation's availability timestamp was established."""
+
+    PROVIDER_TIMESTAMP = "provider_timestamp"
+    PROVIDER_DATE = "provider_date"
+    RETRIEVAL_PROXY = "retrieval_proxy"
+    FIXTURE = "fixture"
+
+
 class DataFrequency(str, Enum):
     """Publication frequency of a source series."""
 
@@ -106,6 +115,9 @@ class ObservationProvenance:
     retrieved_at: datetime
     quality_state: DataQualityState
     vintage_date: date | None = None
+    availability_basis: AvailabilityBasis = (
+        AvailabilityBasis.PROVIDER_TIMESTAMP
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -136,6 +148,13 @@ class ObservationProvenance:
         if not isinstance(self.quality_state, DataQualityState):
             raise TypeError(
                 "quality_state must be a DataQualityState"
+            )
+        if not isinstance(
+            self.availability_basis,
+            AvailabilityBasis,
+        ):
+            raise TypeError(
+                "availability_basis must be an AvailabilityBasis"
             )
         if self.vintage_date is not None:
             vintage_date = _date_only(
@@ -348,6 +367,9 @@ class NormalizedObservation:
             ),
             "quality_state": (
                 self.provenance.quality_state.value
+            ),
+            "availability_basis": (
+                self.provenance.availability_basis.value
             ),
             "vintage_date": (
                 self.provenance.vintage_date.isoformat()

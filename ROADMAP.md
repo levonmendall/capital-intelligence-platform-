@@ -49,7 +49,10 @@ produce false precision.
 - [x] Add point-in-time availability and revision identity.
 - [x] Add explicit live, cached, stale, fixture, fallback, and missing states.
 - [x] Preserve the legacy state-engine observation contract with an adapter.
-- [ ] Define provider protocols.
+- [x] Define provider-neutral query and series contracts.
+- [x] Implement a canonical FRED adapter with point-in-time boundaries.
+- [x] Record whether availability uses provider dates or retrieval proxies.
+- [x] Add a version-controlled registry for foundation FRED series.
 - Implement resilient FRED retrieval with caching, rate-limit handling,
   freshness rules, and local fixtures.
 - Persist observation time, release time, revision/vintage, unit, frequency,

@@ -70,6 +70,13 @@ canonical observations only when the caller supplies explicit provenance.
 Providers will adopt the canonical contract incrementally; no live retrieval
 path is silently changed by this migration.
 
+`data.provider` defines the provider-neutral `ObservationProvider`,
+`ObservationQuery`, and `SeriesSpecification` contracts. The canonical FRED
+adapter implements that protocol while retaining its legacy value API. FRED
+vintage dates are treated conservatively as available at the end of the
+provider date; when vintage metadata is absent, retrieval time is used as an
+explicit proxy rather than inventing a release timestamp.
+
 ## Committee-governance integration
 
 `committee` owns collective governance. New recommendation-governance callers
