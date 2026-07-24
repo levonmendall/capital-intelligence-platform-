@@ -109,6 +109,11 @@ cross-venue consolidation.
 - Configure and version weights.
 - Apply missing-data and veto policies.
 - Submit assessments to committee governance.
+- [x] Define append-only thesis lifecycle and falsification triggers.
+- [x] Define structured dissent and resolution conditions.
+- [x] Make no action a formal terminal committee outcome.
+- [x] Define evidence-trust dimensions and disclosed scoring.
+- [x] Define scenario shocks and versioned cross-asset transmission maps.
 
 ## Milestone 6 — Stock intelligence
 
@@ -128,6 +133,9 @@ implementation baseline.
   rebalancing, and paper trading.
 - Add walk-forward backtests, point-in-time fundamentals, survivorship-bias
   controls, transaction costs, benchmarks, and attribution.
+- [x] Separate process quality from realized investment outcome.
+- [x] Define disciplined/lucky and flawed/unlucky decision classifications.
+- Persist append-only decision-quality reviews and aggregate learning metrics.
 
 ## Milestone 8 — Application
 

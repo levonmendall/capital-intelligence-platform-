@@ -66,6 +66,42 @@ inputs may block a decision.
 Potential outcomes during development are `Highly attractive`, `Attractive`,
 `Neutral`, `Unattractive`, `High risk`, and `Insufficient evidence`.
 
+`No action` is a formal terminal outcome. It records why action is not
+warranted, the evidence supporting restraint, what future conditions would
+permit action, and when the committee must review the decision.
+
+Material dissent is preserved as a structured minority view rather than
+averaged into confidence. Each dissent identifies the conflicting position,
+supporting evidence, materiality, and observable conditions that could resolve
+the disagreement.
+
+## Thesis and falsification lifecycle
+
+Theses move through proposed, active, challenged, invalidated, and closed
+states. Every active thesis has explicit falsification triggers and a review
+date. Triggers may reference price, valuation, macro, fundamental,
+market-structure, data-quality, or time conditions.
+
+Lifecycle transitions are append-only and require a timestamp and rationale.
+Invalidation and closure do not erase the original proposition or evidence.
+
+## Evidence trust
+
+Evidence trust reports source quality, freshness, completeness, point-in-time
+integrity, directness, revision stability, and known limitations. The initial
+equal-weight score is disclosed and versionable. It informs confidence but
+does not replace the underlying dimensions.
+
+## Scenarios and transmission assumptions
+
+Scenarios explicitly name changed factors, direction, magnitude, rationale,
+and assumptions. Cross-asset transmission maps record direction, strength,
+expected lag, and rationale for relationships such as real yields to growth
+equity valuation or liquidity to Bitcoin.
+
+These maps are hypotheses, not causal facts. They require versions and later
+out-of-sample evaluation.
+
 ## Veto and escalation conditions
 
 Initial policy should permit veto or abstention for:
@@ -100,3 +136,8 @@ Persist the input snapshot, all assessments, votes, dissent, policy and model
 versions, final result, invalidation conditions, portfolio response, timestamps,
 and code release identifier. Later analytics attach realized outcomes without
 rewriting what was known at decision time.
+
+Retrospective reviews separately record process verdict and realized outcome.
+The decision-quality ledger classifies disciplined-positive,
+disciplined-negative, flawed-positive, and flawed-negative cases, with
+unresolved or flat outcomes remaining inconclusive.
