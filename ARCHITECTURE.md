@@ -92,6 +92,20 @@ identities were observed and refuses ambiguous symbol resolution across venues.
 Provider feeds may leave asset class and instrument type unclassified when the
 source does not supply authoritative classification.
 
+`data.market` owns the provider-neutral multi-asset market-data contract.
+Queries are bounded by instrument, venue, data type, time, interval, and result
+limit. Canonical records cover quotes, trades, OHLCV bars, corporate actions,
+perpetual funding, and derivative open interest. Every record retains provider,
+venue, observation time, retrieval time, quality state, and optional provider
+identity.
+
+Market records are never consolidated silently. A venue-specific query rejects
+records from another venue, and a result batch rejects records unavailable at
+the requested decision time. Corporate actions remain separate from raw prices
+so adjustment policy can be versioned and audited. The existing
+`providers.market_data` latest-quote interface remains a legacy compatibility
+surface until its callers migrate.
+
 `data.filing` defines provider-neutral filing queries, filing records, XBRL
 facts, and the filing-provider protocol. The SEC EDGAR adapter makes a filing
 available at its acceptance timestamp, not its calendar filing date. Company

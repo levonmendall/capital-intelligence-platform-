@@ -1,4 +1,8 @@
-"""Market data provider interface."""
+"""Legacy latest-quote interface.
+
+New multi-asset integrations use ``data.CanonicalMarketDataProvider``.
+This interface remains for existing callers until an explicit migration.
+"""
 
 from __future__ import annotations
 

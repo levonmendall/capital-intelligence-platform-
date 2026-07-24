@@ -105,6 +105,20 @@ timestamp, finality assumptions, and reorganization policy. Custody,
 counterparty, stablecoin, bridge, oracle, and regulatory risks remain separate
 from ordinary market-price risk.
 
+## Market-data contract
+
+`data.market` defines bounded queries and immutable records for quotes, trades,
+OHLCV bars, corporate actions, funding rates, and open interest. It supports
+exchange-session equities and continuously traded crypto instruments without
+assuming that a symbol identifies the same market across venues.
+
+The initial milestone is contract-only and deliberately has no live vendor.
+Provider selection follows offline contract validation. Adjusted prices are not
+canonical raw evidence: providers must retain raw bars and corporate actions so
+the platform can apply a named, versioned adjustment policy. Cross-venue crypto
+prices are derived observations and must disclose constituents, weighting,
+outlier policy, timestamp tolerance, and missing-venue behavior.
+
 ## Provider behavior
 
 Providers must use explicit timeouts, bounded retries with backoff, rate-limit

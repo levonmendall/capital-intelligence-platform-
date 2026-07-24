@@ -11,6 +11,7 @@ The active integration milestone adds a deterministic, explainable
 interface. See:
 
 - [Architecture](ARCHITECTURE.md)
+- [Product vision](PRODUCT_VISION.md)
 - [Roadmap](ROADMAP.md)
 - [Data sources and governance](DATA_SOURCES.md)
 - [Institutional decision engine](DECISION_ENGINE.md)
