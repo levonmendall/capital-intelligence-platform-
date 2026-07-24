@@ -36,7 +36,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Compile Python files
-        run: python -m compileall -q core intelligence
+        run: python -m compileall -q core intelligence committee economic_regime providers
 
       - name: Initialize platform
         run: python initialize.py
