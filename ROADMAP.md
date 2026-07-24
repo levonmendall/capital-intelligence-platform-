@@ -59,6 +59,11 @@ produce false precision.
 - [x] Separate issuer identity, instrument identity, and venue symbols.
 - [x] Support crypto networks, contract addresses, trading pairs,
   perpetuals, and continuous 24/7 listings.
+- [x] Define provider-neutral quotes, trades, and OHLCV bars.
+- [x] Define explicit corporate-action, funding-rate, and open-interest
+  records.
+- [x] Enforce market-data decision-time and venue boundaries.
+- [x] Preserve the legacy latest-quote interface during migration.
 - [x] Add current SEC security-master snapshots with ambiguity protection.
 - [x] Add offline SEC submissions and company-facts retrieval.
 - [x] Enforce SEC acceptance timestamps and preserve amended filings.
@@ -67,6 +72,9 @@ produce false precision.
 - Retrieve older SEC submission archive files and dimensional XBRL metadata.
 - Add historical identifiers, corporate actions, and delisted securities from
   a licensed reference provider.
+- Select licensed equity and crypto market-data providers after contract
+  evaluation.
+- Define versioned price-adjustment and cross-venue consolidation policies.
 - Persist observation time, release time, revision/vintage, unit, frequency,
   transformation, and provenance.
 - Add deterministic fallback and data-quality policies.
