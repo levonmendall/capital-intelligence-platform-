@@ -45,7 +45,11 @@ produce false precision.
 
 ## Milestone 3 — Data foundation
 
-- Define provider protocols and normalized observation models.
+- [x] Define strict normalized observation and provenance models.
+- [x] Add point-in-time availability and revision identity.
+- [x] Add explicit live, cached, stale, fixture, fallback, and missing states.
+- [x] Preserve the legacy state-engine observation contract with an adapter.
+- [ ] Define provider protocols.
 - Implement resilient FRED retrieval with caching, rate-limit handling,
   freshness rules, and local fixtures.
 - Persist observation time, release time, revision/vintage, unit, frequency,
