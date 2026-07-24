@@ -42,6 +42,20 @@ These fields are implemented by `data.NormalizedObservation` and
 `is_available_at` or `require_available_at` before using an observation at a
 historical decision timestamp.
 
+## FRED adapter
+
+`providers.fred.FREDProvider` implements the canonical observation-provider
+protocol. Requests include an observation end date and FRED's documented
+[`vintage_dates` snapshot](https://fred.stlouisfed.org/docs/api/fred/series_observations.html)
+derived from the query's timezone-aware `as_of` boundary. Canonical series
+meaning is stored in
+`providers.fred_series.FRED_SERIES`, not embedded in HTTP parsing code.
+
+FRED real-time metadata is date-granular. The adapter therefore treats a
+provider vintage date as available at the end of that UTC day. If FRED omits
+the vintage date, the retrieval timestamp becomes a conservative availability
+proxy and the provenance records `retrieval_proxy`.
+
 ## Provider behavior
 
 Providers must use explicit timeouts, bounded retries with backoff, rate-limit
