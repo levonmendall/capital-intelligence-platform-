@@ -9,6 +9,12 @@ from intelligence.investment_committee_report import (
 from intelligence.investment_committee_report_generator import (
     InvestmentCommitteeReportGenerator,
 )
+from intelligence.investment_committee_result import (
+    InvestmentCommitteeResult,
+)
+from intelligence.committee_statistics import (
+    CommitteeStatisticsCalculator,
+)
 from intelligence.recommendation import (
     ExpectedReturn,
     ExpectedRisk,
@@ -132,3 +138,36 @@ def test_generator_is_deterministic_with_injected_dependencies() -> None:
         generator.generate(decision)
         == generator.generate(decision)
     )
+
+
+def test_committee_result_bundles_consistent_artifacts() -> None:
+    generated_at = datetime(
+        2026,
+        7,
+        23,
+        12,
+        0,
+        tzinfo=timezone.utc,
+    )
+    decision = InvestmentCommittee().evaluate(
+        make_recommendation()
+    )
+    report = InvestmentCommitteeReportGenerator(
+        clock=lambda: generated_at,
+        identifier_factory=lambda: "icr-result-test",
+    ).generate(decision)
+    statistics = CommitteeStatisticsCalculator().calculate(
+        decision
+    )
+
+    result = InvestmentCommitteeResult(
+        decision=decision,
+        report=report,
+        statistics=statistics,
+        generated_at=generated_at,
+    )
+
+    assert result.decision == decision
+    assert result.report == report
+    assert result.statistics == statistics
+    assert result.generated_at == generated_at
