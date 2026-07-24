@@ -37,6 +37,11 @@ provider abstraction.
 - quality state: live, cached, stale, fixture, fallback, or missing;
 - optional prior value and normalized score.
 
+These fields are implemented by `data.NormalizedObservation` and
+`data.ObservationProvenance`. Point-in-time consumers must call
+`is_available_at` or `require_available_at` before using an observation at a
+historical decision timestamp.
+
 ## Provider behavior
 
 Providers must use explicit timeouts, bounded retries with backoff, rate-limit

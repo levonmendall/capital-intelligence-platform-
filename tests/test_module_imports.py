@@ -18,6 +18,7 @@ import pytest
 PACKAGE_ROOTS = (
     "committee",
     "core",
+    "data",
     "economic_regime",
     "intelligence",
     "journal",

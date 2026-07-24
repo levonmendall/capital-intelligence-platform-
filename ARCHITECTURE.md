@@ -57,6 +57,19 @@ contradicting evidence, signals, and conclusion.
 new consumers. The legacy interface will not be removed until its allocation
 consumers have migrated and a deprecation release has been completed.
 
+## Point-in-time data integration
+
+`data` owns strict, immutable observation and provenance contracts. Canonical
+observations distinguish provider identity, series identity, observation date,
+release time, retrieval time, vintage, frequency, transformation, quality
+state, staleness, and point-in-time availability.
+
+The existing `intelligence.observation` models remain the state-engine
+compatibility contract. `intelligence.observation_adapter` converts them into
+canonical observations only when the caller supplies explicit provenance.
+Providers will adopt the canonical contract incrementally; no live retrieval
+path is silently changed by this migration.
+
 ## Committee-governance integration
 
 `committee` owns collective governance. New recommendation-governance callers
