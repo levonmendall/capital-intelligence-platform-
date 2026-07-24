@@ -1,5 +1,12 @@
 """Canonical point-in-time data contracts."""
 
+from data.filing import (
+    CompanyFact,
+    FilingProvider,
+    FilingProviderError,
+    FilingQuery,
+    FilingRecord,
+)
 from data.observation import (
     AvailabilityBasis,
     DataFrequency,
@@ -15,17 +22,46 @@ from data.provider import (
     ProviderError,
     SeriesSpecification,
 )
+from data.security import (
+    AssetClass,
+    IdentifierScheme,
+    Instrument,
+    InstrumentIdentifier,
+    InstrumentType,
+    Issuer,
+    SecurityMasterError,
+    SecurityMasterSnapshot,
+    TradingCalendar,
+    VenueListing,
+    normalize_cik,
+)
 
 __all__ = [
+    "AssetClass",
     "AvailabilityBasis",
+    "CompanyFact",
     "DataFrequency",
     "DataQualityState",
+    "FilingProvider",
+    "FilingProviderError",
+    "FilingQuery",
+    "FilingRecord",
+    "IdentifierScheme",
+    "Instrument",
+    "InstrumentIdentifier",
+    "InstrumentType",
+    "Issuer",
     "NormalizedObservation",
     "ObservationProvenance",
     "ObservationProvider",
     "ObservationQuery",
     "ObservationTrend",
     "ProviderError",
+    "SecurityMasterError",
+    "SecurityMasterSnapshot",
     "SeriesSpecification",
     "Transformation",
+    "TradingCalendar",
+    "VenueListing",
+    "normalize_cik",
 ]

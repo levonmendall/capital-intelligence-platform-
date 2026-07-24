@@ -15,7 +15,7 @@ must be distinguishable.
 | Macro | FRED / original agency | GDP, CPI, payrolls, unemployment, claims, production, housing | Daily to quarterly | Many series are revised |
 | Policy | FRED / central banks | Policy rates, balance sheets, reserves | Daily to weekly | Release timing differs |
 | Credit | FRED and licensed market sources | IG/HY spreads, lending standards, defaults, yield curve | Daily to quarterly | Survey and default revisions |
-| Market | Licensed price provider | Prices, volume, volatility, breadth | Intraday to daily | Corporate-action adjustment |
+| Market | Licensed price and crypto providers | Prices, volume, volatility, breadth, funding, open interest | Intraday to daily | Corporate actions, venue fragmentation, 24/7 sessions |
 | Fundamentals | SEC filings and licensed normalized source | Statements, shares, guidance | Quarterly | Filing time and restatements |
 | Company metadata | SEC and licensed reference source | Industry, geography, identifiers | Event-driven | Identifier and taxonomy changes |
 
@@ -55,6 +55,55 @@ FRED real-time metadata is date-granular. The adapter therefore treats a
 provider vintage date as available at the end of that UTC day. If FRED omits
 the vintage date, the retrieval timestamp becomes a conservative availability
 proxy and the provenance records `retrieval_proxy`.
+
+## SEC EDGAR adapter
+
+`providers.sec_edgar.SECEdgarProvider` uses the SEC's official
+[submissions and XBRL APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
+and its ticker-exchange reference file. It requires `SEC_USER_AGENT` to contain
+a descriptive application identity and contact address, consistent with the
+SEC's automated-access policy; no API key is required.
+
+The adapter provides three bounded capabilities:
+
+- a current security-master snapshot keyed by canonical ten-digit CIK;
+- recent filing metadata from the company's submissions payload;
+- company facts joined to filing acceptance timestamps by accession number.
+
+SEC tickers are venue-listing attributes, not permanent issuer identifiers. The
+adapter maps each CIK to an issuer and each exchange-ticker row to a generic
+instrument and venue listing. The SEC feed does not authoritatively classify
+every row as common stock, ETF, or another instrument type, so those fields
+remain unclassified until a reference provider supplies them. The current
+reference file is not historical security-master data, so its retrieval
+timestamp is recorded as the observation boundary. Historical ticker changes,
+delistings, and corporate actions require a licensed reference source later.
+
+For point-in-time analysis, `acceptanceDateTime` is authoritative. Calendar
+filing dates are retained for reporting but never used as an intraday
+availability proxy. XBRL facts whose accession number cannot be joined to an
+accepted filing are excluded. Original and amended forms are both preserved;
+downstream restatement policy must choose between them explicitly.
+
+The initial adapter covers the `filings.recent` section of the submissions
+payload. Older submission archive files, filing-document parsing, dimensional
+XBRL normalization, and network resilience remain separate milestones.
+
+## Crypto market requirements
+
+Crypto is a first-class market domain, not an equity symbol extension. Canonical
+identity supports spot tokens, stablecoins, futures, and perpetual contracts;
+network-scoped contract addresses; base, quote, and settlement assets; and
+venue-specific symbols. Crypto venue listings use an explicit continuous 24/7
+calendar.
+
+Future crypto providers must preserve exchange identity because prices, volume,
+funding, open interest, liquidations, and even instrument definitions vary by
+venue. Consolidated values must retain their contributing venues and
+methodology. On-chain observations require chain, network, block height or
+timestamp, finality assumptions, and reorganization policy. Custody,
+counterparty, stablecoin, bridge, oracle, and regulatory risks remain separate
+from ordinary market-price risk.
 
 ## Provider behavior
 

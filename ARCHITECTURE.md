@@ -77,6 +77,29 @@ vintage dates are treated conservatively as available at the end of the
 provider date; when vintage metadata is absent, retrieval time is used as an
 explicit proxy rather than inventing a release timestamp.
 
+`data.security` separates issuers, instruments, identifiers, and venue
+listings. The instrument model is multi-asset: equities, funds, fixed income,
+commodities, FX, and crypto may share identity infrastructure without inheriting
+equity-only assumptions. CIK identifies an SEC issuer, not every tradable
+instrument. Tickers and crypto pair symbols are venue attributes and must not
+be treated as permanent identities. Crypto instruments may identify their
+network and contract address without an SEC issuer; spot, futures, and
+perpetuals explicitly identify base, quote, and settlement assets.
+
+Trading behavior is explicit. Exchange-session listings and continuously traded
+24/7 listings cannot be conflated. A security-master snapshot records when
+identities were observed and refuses ambiguous symbol resolution across venues.
+Provider feeds may leave asset class and instrument type unclassified when the
+source does not supply authoritative classification.
+
+`data.filing` defines provider-neutral filing queries, filing records, XBRL
+facts, and the filing-provider protocol. The SEC EDGAR adapter makes a filing
+available at its acceptance timestamp, not its calendar filing date. Company
+facts are joined to submission metadata by accession number; facts without a
+known acceptance timestamp are excluded from point-in-time results. Original
+and amended forms remain distinct records so restatements are never silently
+overwritten.
+
 ## Committee-governance integration
 
 `committee` owns collective governance. New recommendation-governance callers
