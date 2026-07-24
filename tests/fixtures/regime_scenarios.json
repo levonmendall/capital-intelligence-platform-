@@ -1,0 +1,56 @@
+[
+  {
+    "name": "representative_goldilocks",
+    "expected_regime": "Goldilocks",
+    "industrial_production": [100.0, 102.0],
+    "consumer_price_index": [300.0, 307.5],
+    "federal_funds_rate": 3.0,
+    "federal_reserve_total_assets": [100.0, 104.0],
+    "financial_stress_index": 0.2
+  },
+  {
+    "name": "representative_reflation",
+    "expected_regime": "Reflation",
+    "industrial_production": [100.0, 103.0],
+    "consumer_price_index": [300.0, 312.0],
+    "federal_funds_rate": 3.0,
+    "federal_reserve_total_assets": [100.0, 110.0],
+    "financial_stress_index": 0.4
+  },
+  {
+    "name": "representative_stagflation",
+    "expected_regime": "Stagflation",
+    "industrial_production": [100.0, 99.0],
+    "consumer_price_index": [300.0, 315.0],
+    "federal_funds_rate": 6.0,
+    "federal_reserve_total_assets": [100.0, 98.0],
+    "financial_stress_index": 1.0
+  },
+  {
+    "name": "representative_disinflationary_slowdown",
+    "expected_regime": "Disinflationary slowdown",
+    "industrial_production": [100.0, 100.5],
+    "consumer_price_index": [300.0, 297.0],
+    "federal_funds_rate": 1.0,
+    "federal_reserve_total_assets": [100.0, 98.0],
+    "financial_stress_index": 0.0
+  },
+  {
+    "name": "representative_contraction",
+    "expected_regime": "Contraction",
+    "industrial_production": [100.0, 97.0],
+    "consumer_price_index": [300.0, 303.0],
+    "federal_funds_rate": 4.0,
+    "federal_reserve_total_assets": [100.0, 90.0],
+    "financial_stress_index": 3.2
+  },
+  {
+    "name": "representative_transition",
+    "expected_regime": "Transition",
+    "industrial_production": [100.0, 101.0],
+    "consumer_price_index": [300.0, 308.4],
+    "federal_funds_rate": 3.0,
+    "federal_reserve_total_assets": [100.0, 100.0],
+    "financial_stress_index": 0.4
+  }
+]
