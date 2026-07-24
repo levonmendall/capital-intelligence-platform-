@@ -70,6 +70,30 @@ seeded as an offline fixture. Cached responses retain their original retrieval
 timestamp, so a fallback never masquerades as newly retrieved evidence.
 Credentials are neither serialized nor included in cache identity.
 
+## Regime evidence transformation
+
+The first versioned regime rule set, `fred-us-v1`, uses official FRED series
+with distinct economic meanings:
+
+| Signal | FRED series | Transformation |
+|---|---|---|
+| Growth | INDPRO | Year-over-year percent change in industrial production |
+| Inflation | CPIAUCSL | Year-over-year CPI inflation relative to a 2% anchor |
+| Policy | FEDFUNDS + CPIAUCSL | Real federal-funds stance |
+| Liquidity | WALCL | Year-over-year change in Federal Reserve total assets |
+| Financial stress | STLFSI4 | Current stress-index level |
+
+All scores are clipped to the regime engine's `[-1, 1]` contract. The
+transformation constants are explicit fields of `RegimeScoringRules`; changing
+one requires a new version rather than silently rewriting prior decisions.
+Every computed signal retains observation date, release time, retrieval time,
+provider, series identifier, quality state, and raw value.
+
+The version-controlled fixtures exercise historically recognizable regime
+archetypes but are deterministic scenarios, not claims to reproduce an official
+historical vintage. Empirical calibration against archived ALFRED vintages
+remains a separate milestone.
+
 ## SEC EDGAR adapter
 
 `providers.sec_edgar.SECEdgarProvider` uses the SEC's official

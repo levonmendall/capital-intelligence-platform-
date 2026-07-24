@@ -83,6 +83,18 @@ of the successful response. `FREDRetrievalPolicy` makes freshness, retry, and
 stale-if-error limits explicit. Cache use changes the observation quality state
 to `cached` or `stale`; it never silently reports fallback evidence as live.
 
+`economic_regime.evidence` is the point-in-time bridge between canonical
+observations and the regime classifier. `RegimeEvidenceBuilder` transforms
+INDPRO growth, CPI inflation, the real federal-funds stance, Federal Reserve
+balance-sheet liquidity, and STLFSI4 stress into bounded scores using a named,
+versioned rule set. Each score carries the exact provider observations used in
+its calculation. Evidence released after the decision timestamp is excluded.
+
+The classifier's statistical confidence and the evidence-quality adjustment
+remain separate. Missing inputs reduce coverage; cached, fixture, stale, and
+fallback dependencies reduce the evidence-quality multiplier. This prevents a
+complete-looking regime result from hiding degraded source quality.
+
 `data.security` separates issuers, instruments, identifiers, and venue
 listings. The instrument model is multi-asset: equities, funds, fixed income,
 commodities, FX, and crypto may share identity infrastructure without inheriting
