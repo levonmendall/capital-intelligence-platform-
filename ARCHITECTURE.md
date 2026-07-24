@@ -57,6 +57,19 @@ contradicting evidence, signals, and conclusion.
 new consumers. The legacy interface will not be removed until its allocation
 consumers have migrated and a deprecation release has been completed.
 
+## Committee-governance integration
+
+`committee` owns collective governance. New recommendation-governance callers
+use `committee.recommendation_governance`; new end-to-end committee callers use
+`committee.workflow.InstitutionalDecisionWorkflow`.
+
+The mature implementation remains in `intelligence` temporarily, behind the
+canonical committee facade, so existing imports remain compatible. The
+briefing-oriented committee in `committee.meeting` remains a distinct narrative
+meeting model and must not be confused with recommendation governance. See
+[ADR-0001](docs/architecture/ADR-0001-committee-ownership.md) and the
+[canonical decision pipeline](docs/DECISION_PIPELINE.md).
+
 ## Versioning and auditability
 
 Every persisted recommendation and decision should eventually include:
