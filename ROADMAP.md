@@ -18,6 +18,18 @@ repository consolidation and economic-regime integration.
 Acceptance: the full repository test suite passes; no working implementation is
 replaced by a placeholder; the pull request documents the observed baseline.
 
+## Architecture stabilization
+
+- [x] Establish `committee` as the owner of collective governance.
+- [x] Add an ownership-correct recommendation-governance facade.
+- [x] Add a canonical recommendation-to-result workflow.
+- [x] Preserve existing intelligence imports during migration.
+- [x] Document the distinction between briefing meetings and recommendation
+  governance.
+- [ ] Migrate repository callers to canonical committee imports.
+- [ ] Move implementation files only after compatibility paths are proven.
+- [ ] Add observation provenance and append-only decision persistence.
+
 ## Milestone 2 — Economic-regime productionization
 
 - Map normalized provider observations to regime inputs.
